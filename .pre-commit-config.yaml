@@ -4,7 +4,7 @@ repos:
     rev: 3.8.3
     hooks:
       - id: flake8
-        args: ["--config=setup.cfg", "--ignore=W504, W503"]
+        args: ["--config=setup.cfg", "--ignore=W504, W503, E203"]
 
   # modify known_third_party
   - repo: https://github.com/asottile/seed-isort-config
