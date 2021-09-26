@@ -18,11 +18,11 @@ repos:
     hooks:
       - id: isort
 
-  # yapf
-  - repo: https://github.com/pre-commit/mirrors-yapf
-    rev: v0.30.0
+  # black
+  - repo: https://github.com/louisguitton/black-mirror
+    rev: v19.3b0
     hooks:
-      - id: yapf
+      - id: black
 
   # mypy
   - repo: https://github.com/pre-commit/mirrors-mypy
