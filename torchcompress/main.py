@@ -1,12 +1,11 @@
-x = {'a': 37, 'b': 42, 'c': 927}
+x = {"a": 37, "b": 42, "c": 927}
 
-y = 'hello ' 'world'
-z = 'hello ' + 'world'
-a = 'hello {}'.format('world')
+y = "hello " "world"
+z = "hello " + "world"
+a = "hello {}".format("world")
 
 
 class foo(object):
-
     def f(self):
         return 37 * -+2
 
@@ -15,4 +14,11 @@ class foo(object):
 
 
 def f(a):
-    return 37 + -+a[42 - x:y**3]
+    return 37 + -+a[42 - x : y ** 3]
+
+
+def fib(n):
+    a, b = 0, 1
+    while a < n:
+        yield a
+        a, b = b, a + b
