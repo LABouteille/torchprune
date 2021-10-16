@@ -1,0 +1,38 @@
+name: "Python unit-tests"
+
+on: [push]
+
+jobs:
+  install-dependencies:
+    name: "Dependencies + Tests"
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        python: [3.6, 3.7, 3.8, 3.9]
+    steps:
+      - name: "Checkout code"
+        uses: actions/checkout@v2
+      - name: "Set up Python ${{ matrix.python }}"
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python }}
+      - name: "Cache Python dependencies"
+        uses: actions/cache@v2
+        with:
+          # This path is specific to Ubuntu
+          path: ~/.cache/pip
+          # Look to see if there is a cache hit for the corresponding requirements file
+          key: ${{ runner.os }}-${{ matrix.python }}-pip-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.python }}-pip-
+      - name: "Install Python dependencies"
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest
+      - name: "Install dependencies"
+        run: |
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+      - name: "Run tests with pytest"
+        run: |
+          python -m pytest
