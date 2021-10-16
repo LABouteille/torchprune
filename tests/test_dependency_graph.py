@@ -38,7 +38,8 @@ class TestDependencyGraph:
         del cls.model_sequential
         del cls.model_class
 
-    def _seed_everything(self, seed: int):
+    @classmethod
+    def _seed_everything(cls, seed: int):
         random.seed(seed)
         os.environ["PYTHONHASHSEED"] = str(seed)
         np.random.seed(seed)
