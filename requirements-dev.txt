@@ -1,7 +1,9 @@
+-e .
 black
 flake8
 mypy
 pdbpp
+pytest
 torch==1.8.1
 torchvision==0.9.1
 torchviz
