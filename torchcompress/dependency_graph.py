@@ -38,13 +38,27 @@ class DependencyGraph:
         graph = self.__build_dependency(graph)
         return graph
 
-    def run_dependency_graph(self, graph: Dict[nn.Module, Node]):
-        # Sort node
-        ordered_node: List[Node] = self.__order_graph_dependency(graph)
+    def order_dependency_graph(self, graph: Dict[nn.Module, Node]):
+        """"""
 
-        # Exec each prune_fn_next
-        for node in ordered_node:
-            print(node.prune_fn_next())
+        def __topological_sort(
+            node: Node, ordered_node: List[Node], visited: Set[Node]
+        ):
+            """"""
+            if node not in visited:
+                visited.add(node)
+                for dep, _ in node.dependencies:
+                    __topological_sort(dep, ordered_node, visited)
+                ordered_node.append(node)
+            return ordered_node
+
+        ordered_node: List[Node] = []
+        visited: Set[Node] = set()
+
+        input_module = list(self.model.modules())[1]
+        __topological_sort(graph[input_module], ordered_node, visited)
+
+        return reversed(ordered_node)
 
     def __build_graph(self, inputs: torch.Tensor):
         """"""
@@ -98,42 +112,20 @@ class DependencyGraph:
     def __build_dependency(self, graph: Dict[nn.Module, Node]):
         """"""
 
-        def prune_conv():
+        def prune_conv(next_node: Node):
             return "prune_conv"
 
-        def prune_activation():
+        def prune_activation(next_node: Node):
             return "prune_activation"
 
         for module, node in graph.items():
 
             for output in node.outputs:
                 if output.op_type == OPTYPE.ACTIVATION:
-                    node.prune_fn_next = lambda: prune_activation()
+                    node.prune_fn_next = lambda: prune_activation(output)
                 elif output.op_type == OPTYPE.CONV:
-                    node.prune_fn_next = lambda: prune_conv()
+                    node.prune_fn_next = lambda: prune_conv(output)
 
                 node.dependencies.append((output, node.prune_fn_next))
 
         return graph
-
-    def __order_graph_dependency(self, graph: Dict[nn.Module, Node]):
-        """"""
-
-        def __topological_sort(
-            node: Node, ordered_node: List[Node], visited: Set[Node]
-        ):
-            """"""
-            if node not in visited:
-                visited.add(node)
-                for dep, _ in node.dependencies:
-                    __topological_sort(dep, ordered_node, visited)
-                ordered_node.append(node)
-            return ordered_node
-
-        ordered_node: List[Node] = []
-        visited: Set[Node] = set()
-
-        input_module = list(self.model.modules())[1]
-        __topological_sort(graph[input_module], ordered_node, visited)
-
-        return list(reversed(ordered_node))
