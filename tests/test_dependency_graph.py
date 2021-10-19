@@ -45,8 +45,8 @@ class TestDependencyGraph:
 
     def test_build_graph(self):
         x = torch.randn(1, 2, 4, 4)
-        DG = tc.DependencyGraph()
-        graph = DG._DependencyGraph__build_graph(self.model, x)
+        DG = tc.DependencyGraph(self.model)
+        graph = DG._DependencyGraph__build_graph(x)
 
         graph_mock = Mock()
         graph_copy = graph.copy()
@@ -83,8 +83,8 @@ class TestDependencyGraph:
     def test_build_dependency_graph(self):
         x = torch.randn(1, 2, 4, 4)
 
-        DG = tc.DependencyGraph()
-        graph = DG.build_dependency_graph(self.model, x)
+        DG = tc.DependencyGraph(self.model)
+        graph = DG.build_dependency_graph(x)
 
         # Mock graph
         graph_mock = Mock()
@@ -139,3 +139,10 @@ class TestDependencyGraph:
                 ]
                 assert node_dep.module == node_dep_mock.module
                 assert prune_fn_next_dep() == prune_fn_next_dep_mock()
+
+    def test_run_graph(self):
+        x = torch.randn(1, 2, 4, 4)
+
+        DG = tc.DependencyGraph(self.model)
+        graph = DG.build_dependency_graph(x)
+        DG.run_dependency_graph(graph)

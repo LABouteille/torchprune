@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 from enum import Enum
-from typing import Any, Callable, Dict, List, Tuple
+from typing import Any, Callable, Dict, List, Set, Tuple
 
 
 class OPTYPE(Enum):
@@ -29,16 +29,24 @@ class Node:
 
 
 class DependencyGraph:
-    def __init__(self):
-        pass
+    def __init__(self, model: nn.Module):
+        self.model = model
 
-    def build_dependency_graph(self, model: nn.Module, inputs: torch.Tensor):
+    def build_dependency_graph(self, inputs: torch.Tensor):
         """"""
-        graph = self.__build_graph(model, inputs)
+        graph: Dict[nn.Module, Node] = self.__build_graph(inputs)
         graph = self.__build_dependency(graph)
         return graph
 
-    def __build_graph(self, model: nn.Module, inputs: torch.Tensor):
+    def run_dependency_graph(self, graph: Dict[nn.Module, Node]):
+        # Sort node
+        ordered_node: List[Node] = self.__order_graph_dependency(graph)
+
+        # Exec each prune_fn_next
+        for node in ordered_node:
+            print(node.prune_fn_next())
+
+    def __build_graph(self, inputs: torch.Tensor):
         """"""
         grad_fn_to_module = {}
 
@@ -48,11 +56,11 @@ class DependencyGraph:
             grad_fn_to_module[output.grad_fn] = module
 
         hooks = []
-        for module in model.modules():
+        for module in self.model.modules():
             if isinstance(module, (nn.Conv2d, nn.ReLU)):
                 hooks.append(module.register_forward_hook(hook_fn))
 
-        out = model(inputs)
+        out = self.model(inputs)
 
         for hook in hooks:
             hook.remove()
@@ -87,7 +95,7 @@ class DependencyGraph:
         _ = __backward_traversal(out.grad_fn, module_to_node)
         return module_to_node
 
-    def __build_dependency(self, graph: Dict[Any, nn.Module]):
+    def __build_dependency(self, graph: Dict[nn.Module, Node]):
         """"""
 
         def prune_conv():
@@ -107,3 +115,25 @@ class DependencyGraph:
                 node.dependencies.append((output, node.prune_fn_next))
 
         return graph
+
+    def __order_graph_dependency(self, graph: Dict[nn.Module, Node]):
+        """"""
+
+        def __topological_sort(
+            node: Node, ordered_node: List[Node], visited: Set[Node]
+        ):
+            """"""
+            if node not in visited:
+                visited.add(node)
+                for dep, _ in node.dependencies:
+                    __topological_sort(dep, ordered_node, visited)
+                ordered_node.append(node)
+            return ordered_node
+
+        ordered_node: List[Node] = []
+        visited: Set[Node] = set()
+
+        input_module = list(self.model.modules())[1]
+        __topological_sort(graph[input_module], ordered_node, visited)
+
+        return list(reversed(ordered_node))
