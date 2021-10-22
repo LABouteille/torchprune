@@ -1,31 +1,9 @@
 import torch
 import torch.nn as nn
-from enum import Enum
-from typing import Any, Callable, Dict, List, Set, Tuple
+from typing import Any, Dict, List, Set
 
-
-class OPTYPE(Enum):
-    CONV = 1
-    ACTIVATION = 2
-    # For torch.nn.functional
-    FUNCTIONAL = 3
-
-    def __repr__(self):
-        return self.name
-
-
-class Node:
-    def __init__(self, module: nn.Module, op_type: OPTYPE, grad_fn: Any):
-        # Public
-        self.module: nn.Module = module
-        self.op_type: OPTYPE = op_type
-        self.grad_fn = grad_fn
-        self.prune_fn_next: Callable = lambda: None
-        self.dependencies: List[Tuple[nn.Module, Callable]] = []
-        self.outputs: List[nn.Module] = []
-
-    def __repr__(self):
-        return f"<Node: module={self.module} | op_type={self.op_type} | prune_fn_next={self.prune_fn_next()}>"
+from torchcompress.node import OPTYPE, Node
+from torchcompress.pruner import prune_activation, prune_conv
 
 
 class DependencyGraph:
@@ -58,7 +36,7 @@ class DependencyGraph:
         input_module = list(self.model.modules())[1]
         __topological_sort(graph[input_module], ordered_node, visited)
 
-        return reversed(ordered_node)
+        return list(reversed(ordered_node))
 
     def __build_graph(self, inputs: torch.Tensor):
         """"""
@@ -111,13 +89,6 @@ class DependencyGraph:
 
     def __build_dependency(self, graph: Dict[nn.Module, Node]):
         """"""
-
-        def prune_conv(next_node: Node):
-            return "prune_conv"
-
-        def prune_activation(next_node: Node):
-            return "prune_activation"
-
         for module, node in graph.items():
 
             for output in node.outputs:

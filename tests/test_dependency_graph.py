@@ -7,7 +7,7 @@ import torch.nn.functional as F
 from unittest.mock import Mock
 
 import torchcompress as tc
-from torchcompress.dependency_graph import OPTYPE, Node
+from torchcompress.node import OPTYPE, Node
 
 
 class TestDependencyGraph:
