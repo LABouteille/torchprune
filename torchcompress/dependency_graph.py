@@ -3,7 +3,7 @@ import torch.nn as nn
 from typing import Any, Dict
 
 from torchcompress.node import OPTYPE, Node
-from torchcompress.pruner.structured import prune_activation, prune_conv
+from torchcompress.pruner import prune_activation, prune_conv
 
 
 class DependencyGraph:
