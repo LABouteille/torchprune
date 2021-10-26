@@ -139,3 +139,36 @@ class TestDependencyGraph:
                 ]
                 assert node_dep.module == node_dep_mock.module
                 assert prune_fn_next_dep() == prune_fn_next_dep_mock()
+
+    def test_order_dependency_graph(self):
+        x = torch.randn(1, 2, 4, 4)
+
+        DG = tc.DependencyGraph(self.model)
+        graph = DG.build_dependency_graph(x)
+        ordered_node = DG.order_dependency_graph(graph)
+
+        list_modules = list(self.model.modules())
+        conv_2_4_module = list_modules[1]
+        relu_module = OPTYPE.FUNCTIONAL
+        conv_4_5_module = list_modules[2]
+
+        node1_mock = Node(
+            module=conv_2_4_module, op_type=OPTYPE.CONV, grad_fn=lambda: None
+        )
+        node2_mock = Node(
+            module=relu_module, op_type=OPTYPE.ACTIVATION, grad_fn=lambda: None
+        )
+        node3_mock = Node(
+            module=conv_4_5_module, op_type=OPTYPE.CONV, grad_fn=lambda: None
+        )
+
+        node1_mock.prune_fn_next = lambda: "prune_activation"
+        node2_mock.prune_fn_next = lambda: "prune_conv"
+        node3_mock.prune_fn_next = lambda: None
+
+        ordered_node_mock = [node1_mock, node2_mock, node3_mock]
+
+        for i, node in enumerate(ordered_node):
+            node_mock = ordered_node_mock[i]
+            assert node.module == node_mock.module
+            assert node.prune_fn_next() == node_mock.prune_fn_next()

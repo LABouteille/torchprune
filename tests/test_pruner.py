@@ -50,6 +50,7 @@ class TestPruner:
 
         DG = tc.DependencyGraph(self.model)
         graph = DG.build_dependency_graph(x)
-        print(graph)
-        pruner = tc.Pruner()
-        print(pruner)
+        ordered_node = DG.order_dependency_graph(graph)
+
+        pruner = tc.Pruner(ordered_node)
+        pruner.run()
