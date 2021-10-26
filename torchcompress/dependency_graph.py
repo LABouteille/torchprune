@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from typing import Any, Dict, List, Set
+from typing import Any, Dict
 
 from torchcompress.node import OPTYPE, Node
 from torchcompress.pruner.structured import prune_activation, prune_conv
@@ -15,28 +15,6 @@ class DependencyGraph:
         graph: Dict[nn.Module, Node] = self.__build_graph(inputs)
         graph = self.__build_dependency(graph)
         return graph
-
-    def order_dependency_graph(self, graph: Dict[nn.Module, Node]):
-        """"""
-
-        def __topological_sort(
-            node: Node, ordered_node: List[Node], visited: Set[Node]
-        ):
-            """"""
-            if node not in visited:
-                visited.add(node)
-                for dep, _ in node.dependencies:
-                    __topological_sort(dep, ordered_node, visited)
-                ordered_node.append(node)
-            return ordered_node
-
-        ordered_node: List[Node] = []
-        visited: Set[Node] = set()
-
-        input_module = list(self.model.modules())[1]
-        __topological_sort(graph[input_module], ordered_node, visited)
-
-        return list(reversed(ordered_node))
 
     def __build_graph(self, inputs: torch.Tensor):
         """"""
