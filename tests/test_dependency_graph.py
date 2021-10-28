@@ -4,10 +4,12 @@ import random
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from unittest.mock import Mock
 
 import torchcompress as tc
-from torchcompress.node import OPTYPE, Node
+
+# from unittest.mock import Mock
+
+# from torchcompress.node import OPTYPE, Node
 
 
 class TestDependencyGraph:
@@ -20,11 +22,14 @@ class TestDependencyGraph:
                 super().__init__()
                 self.conv1 = nn.Conv2d(in_channels=2, out_channels=4, kernel_size=3)
                 self.conv2 = nn.Conv2d(in_channels=4, out_channels=5, kernel_size=1)
+                self.conv3 = nn.Conv2d(in_channels=5, out_channels=4, kernel_size=1)
 
             def forward(self, x):
                 x = self.conv1(x)
                 x = F.relu(x)
                 x = self.conv2(x)
+                x = F.relu(x)
+                x = self.conv3(x)
                 return x
 
         cls.model = ConvNet()
@@ -43,132 +48,156 @@ class TestDependencyGraph:
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = True
 
-    def test_build_graph(self):
+    def test(self):
         x = torch.randn(1, 2, 4, 4)
         DG = tc.DependencyGraph(self.model)
-        graph = DG._DependencyGraph__build_graph(x)
+        DG.build_dependency_graph(x)
 
-        graph_mock = Mock()
-        graph_copy = graph.copy()
+        for key, val in DG.dependencies.items():
+            print(key, val)
+            print(
+                f"{key} prune_fn",
+                key.prune_fn["in_channels"](),
+                key.prune_fn["out_channels"](),
+            )
+            for node in val:
+                print(
+                    f"\t{node} prune_fn",
+                    node.prune_fn["in_channels"](),
+                    node.prune_fn["out_channels"](),
+                )
+            print("-----")
 
-        def getitem(module):
-            return graph_copy[module]
+        # for module, node in module_to_node.items():
+        #     print(module, node.outputs)
+        #     print("-----")
 
-        def setitem(module, node):
-            graph_copy[module] = node
+    # def test_build_graph(self):
+    #     x = torch.randn(1, 2, 4, 4)
+    #     DG = tc.DependencyGraph(self.model)
+    #     module_to_node = DG._DependencyGraph__build_graph(x)
 
-        graph_mock.__getitem__ = Mock(side_effect=getitem)
-        graph_mock.__setitem__ = Mock(side_effect=setitem)
+    #     module_to_node_mock = Mock()
+    #     module_to_node_copy = module_to_node.copy()
 
-        list_modules = list(self.model.modules())
-        conv_2_4_module = list_modules[1]
-        relu_module = OPTYPE.FUNCTIONAL
-        conv_4_5_module = list_modules[2]
+    #     def getitem(module):
+    #         return module_to_node_copy[module]
 
-        graph_mock[conv_2_4_module] = Node(
-            module=conv_2_4_module, op_type=OPTYPE.CONV, grad_fn=lambda: None
-        )
-        graph_mock[relu_module] = Node(
-            module=relu_module, op_type=OPTYPE.ACTIVATION, grad_fn=lambda: None
-        )
-        graph_mock[conv_4_5_module] = Node(
-            module=conv_4_5_module, op_type=OPTYPE.CONV, grad_fn=lambda: None
-        )
+    #     def setitem(module, node):
+    #         module_to_node_copy[module] = node
 
-        for module, node in graph.items():
-            node_mock = graph_mock[module]
-            assert node.module == node_mock.module
-            assert graph[module].prune_fn_next() == graph_mock[module].prune_fn_next()
+    #     module_to_node_mock.__getitem__ = Mock(side_effect=getitem)
+    #     module_to_node_mock.__setitem__ = Mock(side_effect=setitem)
 
-    def test_build_dependency_graph(self):
-        x = torch.randn(1, 2, 4, 4)
+    #     list_modules = list(self.model.modules())
+    #     conv_2_4_module = list_modules[1]
+    #     relu_module = OPTYPE.FUNCTIONAL
+    #     conv_4_5_module = list_modules[2]
 
-        DG = tc.DependencyGraph(self.model)
-        graph = DG.build_dependency_graph(x)
+    #     module_to_node_mock[conv_2_4_module] = Node(
+    #         module=conv_2_4_module, op_type=OPTYPE.CONV, grad_fn=lambda: None
+    #     )
+    #     module_to_node_mock[relu_module] = Node(
+    #         module=relu_module, op_type=OPTYPE.ACTIVATION, grad_fn=lambda: None
+    #     )
+    #     module_to_node_mock[conv_4_5_module] = Node(
+    #         module=conv_4_5_module, op_type=OPTYPE.CONV, grad_fn=lambda: None
+    #     )
 
-        # Mock graph
-        graph_mock = Mock()
-        graph_copy = graph.copy()
+    #     for module, node in module_to_node.items():
+    #         node_mock = module_to_node_mock[module]
+    #         assert node.module == node_mock.module
+    #         assert module_to_node[module].prune_fn_next() == module_to_node_mock[module].prune_fn_next()
 
-        def getitem(module):
-            return graph_copy[module]
+    # def test_build_dependency_graph(self):
+    #     x = torch.randn(1, 2, 4, 4)
 
-        def setitem(module, node):
-            graph_copy[module] = node
+    #     DG = tc.DependencyGraph(self.model)
+    #     module_to_node = DG.build_dependency_graph(x)
 
-        graph_mock.__getitem__ = Mock(side_effect=getitem)
-        graph_mock.__setitem__ = Mock(side_effect=setitem)
+    #     # Mock graph
+    #     module_to_node_mock = Mock()
+    #     module_to_node_copy = module_to_node.copy()
 
-        list_modules = list(self.model.modules())
-        conv_2_4_module = list_modules[1]
-        relu_module = OPTYPE.FUNCTIONAL
-        conv_4_5_module = list_modules[2]
+    #     def getitem(module):
+    #         return module_to_node_copy[module]
 
-        graph_mock[conv_2_4_module] = Node(
-            module=conv_2_4_module, op_type=OPTYPE.CONV, grad_fn=lambda: None
-        )
-        graph_mock[relu_module] = Node(
-            module=relu_module, op_type=OPTYPE.ACTIVATION, grad_fn=lambda: None
-        )
-        graph_mock[conv_4_5_module] = Node(
-            module=conv_4_5_module, op_type=OPTYPE.CONV, grad_fn=lambda: None
-        )
+    #     def setitem(module, node):
+    #         module_to_node_copy[module] = node
 
-        graph_mock[conv_2_4_module].prune_fn_next = lambda: "prune_activation"
-        graph_mock[relu_module].prune_fn_next = lambda: "prune_conv"
-        graph_mock[conv_4_5_module].prune_fn_next = lambda: None
+    #     module_to_node_mock.__getitem__ = Mock(side_effect=getitem)
+    #     module_to_node_mock.__setitem__ = Mock(side_effect=setitem)
 
-        graph_mock[conv_2_4_module].dependencies = [
-            (graph_mock[relu_module], graph_mock[conv_2_4_module].prune_fn_next)
-        ]
-        graph_mock[relu_module].dependencies = [
-            (graph_mock[conv_4_5_module], graph_mock[relu_module].prune_fn_next)
-        ]
-        graph_mock[conv_4_5_module].dependencies = []
+    #     list_modules = list(self.model.modules())
+    #     conv_2_4_module = list_modules[1]
+    #     relu_module = OPTYPE.FUNCTIONAL
+    #     conv_4_5_module = list_modules[2]
 
-        for module, node in graph.items():
-            node_mock = graph_mock[module]
-            assert node.module == node_mock.module
-            assert graph[module].prune_fn_next() == graph_mock[module].prune_fn_next()
+    #     module_to_node_mock[conv_2_4_module] = Node(
+    #         module=conv_2_4_module, op_type=OPTYPE.CONV, grad_fn=lambda: None
+    #     )
+    #     module_to_node_mock[relu_module] = Node(
+    #         module=relu_module, op_type=OPTYPE.ACTIVATION, grad_fn=lambda: None
+    #     )
+    #     module_to_node_mock[conv_4_5_module] = Node(
+    #         module=conv_4_5_module, op_type=OPTYPE.CONV, grad_fn=lambda: None
+    #     )
 
-            for i, (node_dep, prune_fn_next_dep) in enumerate(
-                graph[module].dependencies
-            ):
-                node_dep_mock, prune_fn_next_dep_mock = graph_mock[module].dependencies[
-                    i
-                ]
-                assert node_dep.module == node_dep_mock.module
-                assert prune_fn_next_dep() == prune_fn_next_dep_mock()
+    #     module_to_node_mock[conv_2_4_module].prune_fn_next = lambda: "prune_activation"
+    #     module_to_node_mock[relu_module].prune_fn_next = lambda: "prune_conv"
+    #     module_to_node_mock[conv_4_5_module].prune_fn_next = lambda: None
 
-    def test_order_dependency_graph(self):
-        x = torch.randn(1, 2, 4, 4)
+    #     module_to_node_mock[conv_2_4_module].dependencies = [
+    #         (module_to_node_mock[relu_module], module_to_node_mock[conv_2_4_module].prune_fn_next)
+    #     ]
+    #     module_to_node_mock[relu_module].dependencies = [
+    #         (module_to_node_mock[conv_4_5_module], module_to_node_mock[relu_module].prune_fn_next)
+    #     ]
+    #     module_to_node_mock[conv_4_5_module].dependencies = []
 
-        DG = tc.DependencyGraph(self.model)
-        graph = DG.build_dependency_graph(x)
-        ordered_node = DG.order_dependency_graph(graph)
+    #     for module, node in module_to_node.items():
+    #         node_mock = module_to_node_mock[module]
+    #         assert node.module == node_mock.module
+    #         assert module_to_node[module].prune_fn_next() == module_to_node_mock[module].prune_fn_next()
 
-        list_modules = list(self.model.modules())
-        conv_2_4_module = list_modules[1]
-        relu_module = OPTYPE.FUNCTIONAL
-        conv_4_5_module = list_modules[2]
+    #         for i, (node_dep, prune_fn_next_dep) in enumerate(
+    #             module_to_node[module].dependencies
+    #         ):
+    #             node_dep_mock, prune_fn_next_dep_mock = module_to_node_mock[module].dependencies[
+    #                 i
+    #             ]
+    #             assert node_dep.module == node_dep_mock.module
+    #             assert prune_fn_next_dep() == prune_fn_next_dep_mock()
 
-        node1_mock = Node(
-            module=conv_2_4_module, op_type=OPTYPE.CONV, grad_fn=lambda: None
-        )
-        node2_mock = Node(
-            module=relu_module, op_type=OPTYPE.ACTIVATION, grad_fn=lambda: None
-        )
-        node3_mock = Node(
-            module=conv_4_5_module, op_type=OPTYPE.CONV, grad_fn=lambda: None
-        )
+    # def test_order_dependency_graph(self):
+    #     x = torch.randn(1, 2, 4, 4)
 
-        node1_mock.prune_fn_next = lambda: "prune_activation"
-        node2_mock.prune_fn_next = lambda: "prune_conv"
-        node3_mock.prune_fn_next = lambda: None
+    #     DG = tc.DependencyGraph(self.model)
+    #     module_to_node = DG.build_dependency_graph(x)
+    #     ordered_node = DG.order_dependency_graph(module_to_node)
 
-        ordered_node_mock = [node1_mock, node2_mock, node3_mock]
+    #     list_modules = list(self.model.modules())
+    #     conv_2_4_module = list_modules[1]
+    #     relu_module = OPTYPE.FUNCTIONAL
+    #     conv_4_5_module = list_modules[2]
 
-        for i, node in enumerate(ordered_node):
-            node_mock = ordered_node_mock[i]
-            assert node.module == node_mock.module
-            assert node.prune_fn_next() == node_mock.prune_fn_next()
+    #     node1_mock = Node(
+    #         module=conv_2_4_module, op_type=OPTYPE.CONV, grad_fn=lambda: None
+    #     )
+    #     node2_mock = Node(
+    #         module=relu_module, op_type=OPTYPE.ACTIVATION, grad_fn=lambda: None
+    #     )
+    #     node3_mock = Node(
+    #         module=conv_4_5_module, op_type=OPTYPE.CONV, grad_fn=lambda: None
+    #     )
+
+    #     node1_mock.prune_fn_next = lambda: "prune_activation"
+    #     node2_mock.prune_fn_next = lambda: "prune_conv"
+    #     node3_mock.prune_fn_next = lambda: None
+
+    #     ordered_node_mock = [node1_mock, node2_mock, node3_mock]
+
+    #     for i, node in enumerate(ordered_node):
+    #         node_mock = ordered_node_mock[i]
+    #         assert node.module == node_mock.module
+    #         assert node.prune_fn_next() == node_mock.prune_fn_next()

@@ -1,6 +1,6 @@
 import torch.nn as nn
 from enum import Enum
-from typing import Any, Callable, List, Tuple
+from typing import Any, Callable, Dict, List
 
 
 class OPTYPE(Enum):
@@ -19,9 +19,11 @@ class Node:
         self.module: nn.Module = module
         self.op_type: OPTYPE = op_type
         self.grad_fn = grad_fn
-        self.prune_fn_next: Callable = lambda: None
-        self.dependencies: List[Tuple[nn.Module, Callable]] = []
+        self.prune_fn: Dict[str, Callable] = {
+            "in_channels": lambda: None,
+            "out_channels": lambda: None,
+        }
         self.outputs: List[nn.Module] = []
 
     def __repr__(self):
-        return f"<Node: module={self.module} | op_type={self.op_type} | prune_fn_next={self.prune_fn_next()}>"
+        return f"<Node: module={self.module} | op_type={self.op_type}>"

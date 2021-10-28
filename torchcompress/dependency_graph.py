@@ -3,20 +3,25 @@ import torch.nn as nn
 from typing import Any, Dict, List, Set
 
 from torchcompress.node import OPTYPE, Node
-from torchcompress.pruner.structured import prune_activation, prune_conv
+
+# from torchcompress.pruner.structured import prune_activation, prune_conv
 
 
 class DependencyGraph:
     def __init__(self, model: nn.Module):
         self.model = model
+        self.dependencies: Dict[nn.Module, List[Node]] = {}
 
     def build_dependency_graph(self, inputs: torch.Tensor):
         """"""
-        graph: Dict[nn.Module, Node] = self.__build_graph(inputs)
-        graph = self.__build_dependency(graph)
-        return graph
+        # Build graph
+        module_to_node: Dict[nn.Module, Node] = self.__build_graph(inputs)
+        # Order graph
+        ordered_node: List[Node] = self.__order_dependency_graph(module_to_node)
+        # Build dependencies
+        self.__build_dependency(ordered_node)
 
-    def order_dependency_graph(self, graph: Dict[nn.Module, Node]):
+    def __order_dependency_graph(self, module_to_node: Dict[nn.Module, Node]):
         """"""
 
         def __topological_sort(
@@ -25,8 +30,8 @@ class DependencyGraph:
             """"""
             if node not in visited:
                 visited.add(node)
-                for dep, _ in node.dependencies:
-                    __topological_sort(dep, ordered_node, visited)
+                for out in node.outputs:
+                    __topological_sort(out, ordered_node, visited)
                 ordered_node.append(node)
             return ordered_node
 
@@ -34,7 +39,7 @@ class DependencyGraph:
         visited: Set[Node] = set()
 
         input_module = list(self.model.modules())[1]
-        __topological_sort(graph[input_module], ordered_node, visited)
+        __topological_sort(module_to_node[input_module], ordered_node, visited)
 
         return list(reversed(ordered_node))
 
@@ -87,16 +92,22 @@ class DependencyGraph:
         _ = __backward_traversal(out.grad_fn, module_to_node)
         return module_to_node
 
-    def __build_dependency(self, graph: Dict[nn.Module, Node]):
+    def __build_dependency(self, ordered_node: List[Node]):
         """"""
-        for module, node in graph.items():
+        for node in ordered_node:
+            if node.op_type == OPTYPE.CONV:
 
-            for output in node.outputs:
-                if output.op_type == OPTYPE.ACTIVATION:
-                    node.prune_fn_next = lambda: prune_activation(output)
-                elif output.op_type == OPTYPE.CONV:
-                    node.prune_fn_next = lambda: prune_conv(output)
+                node.prune_fn["in_channels"] = lambda: "prune conv in_channels"
+                self.dependencies[node] = []
 
-                node.dependencies.append((output, node.prune_fn_next))
+                # FIXME Suppose len(node.outputs) == 1
+                out = node.outputs
 
-        return graph
+                while len(out) > 0 and out[0].op_type != OPTYPE.CONV:
+                    out[0].prune_fn["out_channels"] = lambda: "prune conv out_channels"
+                    self.dependencies[node].append(out[0])
+                    out = out[0].outputs
+
+                if len(out) > 0:
+                    out[0].prune_fn["out_channels"] = lambda: "prune conv out_channels"
+                    self.dependencies[node].append(out[0])
