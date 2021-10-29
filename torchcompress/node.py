@@ -1,6 +1,8 @@
-import torch.nn as nn
 from enum import Enum
-from typing import Any, Callable, Dict, List
+from typing import TYPE_CHECKING, Any, Callable, Dict, List
+
+if TYPE_CHECKING:  # Not import during run-time.
+    import torch.nn as nn
 
 
 class OPTYPE(Enum):
@@ -14,12 +16,12 @@ class OPTYPE(Enum):
 
 
 class Node:
-    def __init__(self, module: nn.Module, op_type: OPTYPE, grad_fn: Any):
+    def __init__(self, module: "nn.Module", op_type: "OPTYPE", grad_fn: "Any"):
         # Public
-        self.module: nn.Module = module
-        self.op_type: OPTYPE = op_type
-        self.grad_fn = grad_fn
-        self.prune_fn: Dict[str, Callable] = {
+        self.module: "nn.Module" = module
+        self.op_type: "OPTYPE" = op_type
+        self.grad_fn: "Any" = grad_fn
+        self.prune_fn: "Dict[str, Callable]" = {
             "in_channels": lambda: None,
             "out_channels": lambda: None,
         }

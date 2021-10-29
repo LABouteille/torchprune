@@ -22,11 +22,14 @@ class TestPruner:
                 super().__init__()
                 self.conv1 = nn.Conv2d(in_channels=2, out_channels=4, kernel_size=3)
                 self.conv2 = nn.Conv2d(in_channels=4, out_channels=5, kernel_size=1)
+                self.conv3 = nn.Conv2d(in_channels=5, out_channels=4, kernel_size=1)
 
             def forward(self, x):
                 x = self.conv1(x)
                 x = F.relu(x)
                 x = self.conv2(x)
+                x = F.relu(x)
+                x = self.conv3(x)
                 return x
 
         cls.model = ConvNet()
@@ -47,10 +50,16 @@ class TestPruner:
 
     def test_pruner(self):
         x = torch.randn(1, 2, 4, 4)
-
         DG = tc.DependencyGraph(self.model)
-        graph = DG.build_dependency_graph(x)
-        ordered_node = DG.order_dependency_graph(graph)
+        DG.build_dependency_graph(x)
 
-        pruner = tc.Pruner(ordered_node)
-        pruner.run()
+        pruner = tc.Pruner(DG)
+        pruner.run(
+            layer=self.model.conv1, criteria=tc.random_strategy, amount_to_prune=0.25
+        )
+        pruner.run(
+            layer=self.model.conv2, criteria=tc.random_strategy, amount_to_prune=0.25
+        )
+        pruner.run(
+            layer=self.model.conv3, criteria=tc.random_strategy, amount_to_prune=0.25
+        )

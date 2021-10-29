@@ -53,23 +53,12 @@ class TestDependencyGraph:
         DG = tc.DependencyGraph(self.model)
         DG.build_dependency_graph(x)
 
-        for key, val in DG.dependencies.items():
-            print(key, val)
-            print(
-                f"{key} prune_fn",
-                key.prune_fn["in_channels"](),
-                key.prune_fn["out_channels"](),
-            )
-            for node in val:
-                print(
-                    f"\t{node} prune_fn",
-                    node.prune_fn["in_channels"](),
-                    node.prune_fn["out_channels"](),
-                )
-            print("-----")
+        # for key, val in DG.dependencies.items():
+        #     print(key, val)
+        #     print(f"\t{key} prune_fn = {key.prune_fn['in_channels']()} | {key.prune_fn['out_channels']()}")
 
-        # for module, node in module_to_node.items():
-        #     print(module, node.outputs)
+        #     for node in val:
+        #         print(f"\t{node} prune_fn = {node.prune_fn['in_channels']()} | {node.prune_fn['out_channels']()}")
         #     print("-----")
 
     # def test_build_graph(self):

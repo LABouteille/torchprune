@@ -1,25 +1,25 @@
-from typing import List
+from typing import TYPE_CHECKING, Callable, Dict, List
 
-from torchcompress.node import OPTYPE, Node
-from torchcompress.pruner.criteria import random_strategy
-from torchcompress.pruner.structured import prune_conv
+if TYPE_CHECKING:  # Not import during run-time.
+    import torch.nn as nn
+
+    from torchcompress.dependency_graph import DependencyGraph
+    from torchcompress.node import Node
 
 
 class Pruner:
-    def __init__(self, ordered_node: List[Node]):
+    def __init__(self, DG: "DependencyGraph"):
+        self.dependencies: "Dict[Node, List[Node]]" = DG.dependencies
+        self.module_to_node: "Dict[nn.Module, Node]" = DG.module_to_node
 
-        input_node = Node(
-            ordered_node[0].module, ordered_node[0].op_type, ordered_node[0].grad_fn
-        )
-        if input_node.op_type == OPTYPE.CONV:
-            input_node.prune_fn_next = lambda: prune_conv(input_node)
+    def run(self, layer: "nn.Module", criteria: "Callable", amount_to_prune: "float"):
 
-        self.ordered_node = [input_node] + ordered_node
+        indices = criteria(layer, amount_to_prune)
+        input_node = self.module_to_node[layer]
 
-    def run(self):
-        for node in self.ordered_node:
-            print(node.module)
-            # 1) Calculate number of node to prune (criteria)
-            print(f"\t{random_strategy()}")
-            # 2) Run pruning
-            print(f"\t{node.prune_fn_next()}")
+        print(f'{input_node.module} => {input_node.prune_fn["in_channels"](indices)}')
+
+        for dep in self.dependencies[input_node]:
+            print(f'\t {dep.module} => {dep.prune_fn["out_channels"](indices)}')
+
+        print("---")
