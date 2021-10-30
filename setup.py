@@ -8,5 +8,5 @@ setup(
     packages=find_packages(),
     classifiers=["License :: OSI Approved :: MIT License"],
     install_requires=["torch"],
-    python_requires=">=3.6",
+    python_requires=">=3.7",
 )
