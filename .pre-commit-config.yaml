@@ -6,16 +6,6 @@ repos:
       - id: flake8
         args: ["--config=setup.cfg", "--ignore=W504, W503, E203"]
 
-  # black
-  # - repo: https://github.com/louisguitton/black-mirror
-  #   rev: v19.3b0
-  #   hooks:
-  #     - id: black
-  - repo: https://github.com/psf/black
-    rev: 20.8b1
-    hooks:
-      - id: black
-
   # modify known_third_party
   - repo: https://github.com/asottile/seed-isort-config
     rev: v2.2.0
@@ -28,6 +18,12 @@ repos:
     hooks:
       - id: isort
         args: ["--profile", "black"]
+
+  # black
+  - repo: https://github.com/psf/black
+    rev: 20.8b1
+    hooks:
+      - id: black
 
   # mypy
   - repo: https://github.com/pre-commit/mirrors-mypy
