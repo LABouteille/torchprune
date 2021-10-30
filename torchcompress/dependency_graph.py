@@ -9,11 +9,7 @@ if TYPE_CHECKING:
     import torch
 
 from torchcompress.node import OPTYPE, Node
-from torchcompress.pruner.structured import (
-    prune_activation_in,
-    prune_conv_in,
-    prune_conv_out,
-)
+from torchcompress.pruner.structured import prune_conv_in, prune_conv_out
 
 
 class DependencyGraph:
@@ -115,8 +111,7 @@ class DependencyGraph:
                 out = node.outputs
 
                 while len(out) > 0 and out[0].op_type != OPTYPE.CONV:
-                    # FIXME prune_fn depends on type of node
-                    out[0].prune_fn["in_channels"] = prune_activation_in
+                    # FIXME prune_fn should depends on type of node
                     dependencies[node].append(out[0])
                     out = out[0].outputs
 

@@ -64,7 +64,22 @@ class TestPruner:
         pruner.run(
             layer=self.model.conv1, criteria=tc.random_strategy, amount_to_prune=0.25
         )
+
         assert self.model.conv1.in_channels == 2
         assert self.model.conv1.out_channels == 3
         assert self.model.conv2.in_channels == 3
         assert self.model.conv2.out_channels == 5
+
+        assert self.model.conv2.in_channels == 3
+        assert self.model.conv2.out_channels == 5
+        assert self.model.conv3.in_channels == 5
+        assert self.model.conv3.out_channels == 4
+
+        pruner.run(
+            layer=self.model.conv2, criteria=tc.random_strategy, amount_to_prune=0.25
+        )
+
+        assert self.model.conv2.in_channels == 3
+        assert self.model.conv2.out_channels == 4
+        assert self.model.conv3.in_channels == 4
+        assert self.model.conv3.out_channels == 4
