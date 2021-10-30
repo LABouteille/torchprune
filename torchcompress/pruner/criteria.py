@@ -1,14 +1,14 @@
 from __future__ import annotations
 
 import random
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 
 if TYPE_CHECKING:
     # Not import during run-time.
     import torch.nn as nn
 
 
-def random_strategy(layer: nn.Module, amount_to_prune: float):
+def random_strategy(layer: nn.Module, amount_to_prune: float) -> List[int]:
     if amount_to_prune <= 0:
         return []
     n = len(layer.weight)

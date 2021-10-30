@@ -1,6 +1,7 @@
-import numpy as np
 import os
 import random
+
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -33,10 +34,14 @@ class TestPruner:
                 return x
 
         cls.model = ConvNet()
+        x = torch.randn(1, 2, 4, 4)
+        cls.DG = tc.DependencyGraph(cls.model)
+        cls.DG.build_dependency_graph(x)
 
     @classmethod
     def teardown_class(cls):
         del cls.model
+        del cls.DG
 
     @classmethod
     def _seed_everything(cls, seed: int):
@@ -49,17 +54,17 @@ class TestPruner:
         torch.backends.cudnn.benchmark = True
 
     def test_pruner(self):
-        x = torch.randn(1, 2, 4, 4)
-        DG = tc.DependencyGraph(self.model)
-        DG.build_dependency_graph(x)
+        pruner = tc.Pruner(self.DG)
 
-        pruner = tc.Pruner(DG)
+        assert self.model.conv1.in_channels == 2
+        assert self.model.conv1.out_channels == 4
+        assert self.model.conv2.in_channels == 4
+        assert self.model.conv2.out_channels == 5
+
         pruner.run(
             layer=self.model.conv1, criteria=tc.random_strategy, amount_to_prune=0.25
         )
-        pruner.run(
-            layer=self.model.conv2, criteria=tc.random_strategy, amount_to_prune=0.25
-        )
-        pruner.run(
-            layer=self.model.conv3, criteria=tc.random_strategy, amount_to_prune=0.25
-        )
+        assert self.model.conv1.in_channels == 2
+        assert self.model.conv1.out_channels == 3
+        assert self.model.conv2.in_channels == 3
+        assert self.model.conv2.out_channels == 5

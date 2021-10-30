@@ -25,8 +25,8 @@ class Node:
         self.op_type: OPTYPE = op_type
         self.grad_fn: Any = grad_fn
         self.prune_fn: Dict[str, Callable] = {
-            "in_channels": lambda: None,
-            "out_channels": lambda: None,
+            "in_channels": lambda x, y: None,
+            "out_channels": lambda x, y: None,
         }
         self.outputs: List[nn.Module] = []
 

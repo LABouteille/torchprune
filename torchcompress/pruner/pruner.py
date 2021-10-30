@@ -15,14 +15,12 @@ class Pruner:
         self.dependencies: Dict[Node, List[Node]] = DG.dependencies
         self.module_to_node: Dict[nn.Module, Node] = DG.module_to_node
 
-    def run(self, layer: nn.Module, criteria: Callable, amount_to_prune: float):
+    def run(self, layer: nn.Module, criteria: Callable, amount_to_prune: float) -> None:
+        """"""
+        indices: List[int] = criteria(layer, amount_to_prune)
 
-        indices = criteria(layer, amount_to_prune)
         input_node = self.module_to_node[layer]
-
-        print(f'{input_node.module} => {input_node.prune_fn["in_channels"](indices)}')
+        input_node.prune_fn["out_channels"](input_node.module, indices)
 
         for dep in self.dependencies[input_node]:
-            print(f'\t {dep.module} => {dep.prune_fn["out_channels"](indices)}')
-
-        print("---")
+            dep.prune_fn["in_channels"](dep.module, indices)
