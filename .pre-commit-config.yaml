@@ -13,11 +13,11 @@ repos:
       - id: seed-isort-config
 
   # isort
-  # - repo: https://github.com/timothycrosley/isort
-  #   rev: 5.2.2
-  #   hooks:
-  #     - id: isort
-  #       args: ["--profile", "black"]
+  - repo: https://github.com/timothycrosley/isort
+    rev: 5.2.2
+    hooks:
+      - id: isort
+        args: ["--profile", "black"]
 
   # black
   - repo: https://github.com/louisguitton/black-mirror
