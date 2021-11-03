@@ -9,7 +9,12 @@ if TYPE_CHECKING:
     import torch
 
 from torchcompress.node import OPTYPE, Node
-from torchcompress.pruner.structured import prune_conv_in, prune_conv_out
+from torchcompress.pruner.structured import (
+    prune_conv_in,
+    prune_conv_out,
+    prune_linear_in,
+    prune_linear_out,
+)
 
 
 class DependencyGraph:
@@ -35,7 +40,7 @@ class DependencyGraph:
 
         hooks = []
         for module in self.model.modules():
-            if isinstance(module, (nn.Conv2d, nn.ReLU)):
+            if isinstance(module, (nn.Conv2d, nn.Linear, nn.ReLU)):
                 hooks.append(module.register_forward_hook(hook_fn))
 
         out = self.model(inputs)
@@ -50,6 +55,8 @@ class DependencyGraph:
 
             if isinstance(module, nn.Conv2d):
                 op_type = OPTYPE.CONV
+            elif isinstance(module, nn.Linear):
+                op_type = OPTYPE.LINEAR
             else:
                 # Pytorch functional has no module
                 if module is None:
@@ -103,7 +110,6 @@ class DependencyGraph:
 
         for node in ordered_node:
             if node.op_type == OPTYPE.CONV:
-
                 node.prune_fn["out_channels"] = prune_conv_out
                 dependencies[node] = []
 
@@ -117,6 +123,22 @@ class DependencyGraph:
 
                 if len(out) > 0:
                     out[0].prune_fn["in_channels"] = prune_conv_in
+                    dependencies[node].append(out[0])
+
+            elif node.op_type == OPTYPE.LINEAR:
+                node.prune_fn["out_channels"] = prune_linear_out
+                dependencies[node] = []
+
+                # TODO Suppose len(node.outputs) == 1. What if len > 2
+                out = node.outputs
+
+                while len(out) > 0 and out[0].op_type != OPTYPE.LINEAR:
+                    # FIXME prune_fn should depends on type of node
+                    dependencies[node].append(out[0])
+                    out = out[0].outputs
+
+                if len(out) > 0:
+                    out[0].prune_fn["in_channels"] = prune_linear_in
                     dependencies[node].append(out[0])
 
         return dependencies

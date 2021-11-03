@@ -13,7 +13,7 @@ import torchcompress as tc
 # from torchcompress.node import OPTYPE, Node
 
 
-class TestPruner:
+class TestPrunerConv:
     @classmethod
     def setup_class(cls):
         cls._seed_everything(42)
@@ -53,7 +53,7 @@ class TestPruner:
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = True
 
-    def test_pruner(self):
+    def test_conv(self):
         pruner = tc.Pruner(self.DG)
 
         assert self.model.conv1.in_channels == 2
@@ -62,7 +62,7 @@ class TestPruner:
         assert self.model.conv2.out_channels == 5
 
         pruner.run(
-            layer=self.model.conv1, criteria=tc.random_strategy, amount_to_prune=0.25
+            layer=self.model.conv1, criteria=tc.random_criteria, amount_to_prune=0.25
         )
 
         assert self.model.conv1.in_channels == 2
@@ -76,7 +76,7 @@ class TestPruner:
         assert self.model.conv3.out_channels == 4
 
         pruner.run(
-            layer=self.model.conv2, criteria=tc.random_strategy, amount_to_prune=0.25
+            layer=self.model.conv2, criteria=tc.random_criteria, amount_to_prune=0.25
         )
 
         assert self.model.conv2.in_channels == 3

@@ -8,7 +8,7 @@ if TYPE_CHECKING:
     import torch.nn as nn
 
 
-def random_strategy(layer: nn.Module, amount_to_prune: float) -> List[int]:
+def random_criteria(layer: nn.Module, amount_to_prune: float) -> List[int]:
     if amount_to_prune <= 0.0:
         return []
     n = len(layer.weight)

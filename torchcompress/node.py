@@ -10,9 +10,10 @@ if TYPE_CHECKING:
 
 class OPTYPE(Enum):
     CONV = 1
-    ACTIVATION = 2
+    LINEAR = 2
+    ACTIVATION = 3
     # For torch.nn.functional
-    FUNCTIONAL = 3
+    FUNCTIONAL = 4
 
     def __repr__(self):
         return self.name
