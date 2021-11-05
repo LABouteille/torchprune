@@ -12,8 +12,7 @@ class OPTYPE(Enum):
     CONV = 1
     LINEAR = 2
     ACTIVATION = 3
-    # For torch.nn.functional
-    FUNCTIONAL = 4
+    RESHAPE = 4  # torch.flatten() etc.
 
     def __repr__(self):
         return self.name

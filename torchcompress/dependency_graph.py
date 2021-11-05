@@ -24,9 +24,11 @@ class DependencyGraph:
     def build_dependency_graph(self, inputs: torch.Tensor) -> None:
         """"""
         self.module_to_node: Dict[nn.Module, Node] = self.__build_graph(inputs)
-        ordered_node: List[Node] = self.__order_dependency_graph(self.module_to_node)
+        self.ordered_node: List[Node] = self.__order_dependency_graph(
+            self.module_to_node
+        )
         self.dependencies: Dict[Node, List[Node]] = self.__build_dependency(
-            ordered_node
+            self.ordered_node
         )
 
     def __build_graph(self, inputs: torch.Tensor) -> Dict[nn.Module, Node]:
@@ -51,6 +53,7 @@ class DependencyGraph:
         # Backward traversal
         def __backward_traversal(grad_fn: Any, module_to_node: Dict[nn.Module, Node]):
             """"""
+            # import pdb; pdb.set_trace()
             module = grad_fn_to_module.get(grad_fn)
 
             if isinstance(module, nn.Conv2d):
@@ -58,10 +61,11 @@ class DependencyGraph:
             elif isinstance(module, nn.Linear):
                 op_type = OPTYPE.LINEAR
             else:
-                # Pytorch functional has no module
-                if module is None:
-                    module = OPTYPE.FUNCTIONAL
-                op_type = OPTYPE.ACTIVATION
+                # Pytorch ReLU functional has no module
+                if module is None and ("relubackward" in grad_fn.name().lower()):
+                    op_type = OPTYPE.ACTIVATION
+                else:  # torch.flatten() etc.
+                    op_type = OPTYPE.RESHAPE
 
             node = Node(module, op_type, grad_fn)
             module_to_node[module] = node
@@ -109,36 +113,31 @@ class DependencyGraph:
         dependencies: Dict[Node, List[Node]] = {}
 
         for node in ordered_node:
-            if node.op_type == OPTYPE.CONV:
-                node.prune_fn["out_channels"] = prune_conv_out
+            if node.op_type == OPTYPE.CONV or node.op_type == OPTYPE.LINEAR:
+
+                if node.op_type == OPTYPE.CONV:
+                    node.prune_fn["out_channels"] = prune_conv_out
+                elif node.op_type == OPTYPE.LINEAR:
+                    node.prune_fn["out_channels"] = prune_linear_out
+
                 dependencies[node] = []
 
                 # TODO Suppose len(node.outputs) == 1. What if len > 2
                 out = node.outputs
 
-                while len(out) > 0 and out[0].op_type != OPTYPE.CONV:
+                while len(out) > 0 and (
+                    out[0].op_type != OPTYPE.CONV and out[0].op_type != OPTYPE.LINEAR
+                ):
                     # FIXME prune_fn should depends on type of node
                     dependencies[node].append(out[0])
                     out = out[0].outputs
 
                 if len(out) > 0:
-                    out[0].prune_fn["in_channels"] = prune_conv_in
-                    dependencies[node].append(out[0])
+                    if out[0].op_type == OPTYPE.CONV:
+                        out[0].prune_fn["in_channels"] = prune_conv_in
+                    elif out[0].op_type == OPTYPE.LINEAR:
+                        out[0].prune_fn["in_channels"] = prune_linear_in
 
-            elif node.op_type == OPTYPE.LINEAR:
-                node.prune_fn["out_channels"] = prune_linear_out
-                dependencies[node] = []
-
-                # TODO Suppose len(node.outputs) == 1. What if len > 2
-                out = node.outputs
-
-                while len(out) > 0 and out[0].op_type != OPTYPE.LINEAR:
-                    # FIXME prune_fn should depends on type of node
-                    dependencies[node].append(out[0])
-                    out = out[0].outputs
-
-                if len(out) > 0:
-                    out[0].prune_fn["in_channels"] = prune_linear_in
                     dependencies[node].append(out[0])
 
         return dependencies
