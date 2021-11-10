@@ -65,7 +65,7 @@ class DependencyGraph:
                 if module is None and ("relubackward" in grad_fn.name().lower()):
                     op_type = OPTYPE.ACTIVATION
                 else:  # torch.flatten() etc.
-                    op_type = OPTYPE.RESHAPE
+                    op_type = OPTYPE.FLATTEN
 
             node = Node(module, op_type, grad_fn)
             module_to_node[module] = node

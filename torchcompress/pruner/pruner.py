@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+# from functools import reduce
 from typing import TYPE_CHECKING, Callable, Dict, List
 
 from torchcompress.node import OPTYPE
@@ -23,20 +24,25 @@ class Pruner:
     def run(self, layer: nn.Module, criteria: Callable, amount_to_prune: float) -> None:
         """"""
         indices: List[int] = criteria(layer, amount_to_prune)
-
         input_node = self.module_to_node[layer]
+        nb_filter_before_pruning = input_node.module.weight.shape[0]
+
         input_node.prune_fn["out_channels"](input_node.module, indices)
 
         for dep in self.dependencies[input_node]:
-            if dep.op_type == OPTYPE.RESHAPE:
+            if dep.op_type == OPTYPE.FLATTEN:
                 # TODO: Use some sort of self.cache to avoid doing module(x) all over again ?
-                self.__reshape_indices(input_node, indices)
+                indices = self.__expand_indices(
+                    input_node, indices, nb_filter_before_pruning
+                )
                 break
 
         for dep in self.dependencies[input_node]:
             dep.prune_fn["in_channels"](dep.module, indices)
 
-    def __reshape_indices(self, input_node, indices):
+    def __expand_indices(
+        self, input_node: Node, indices: List[int], nb_filter_before_pruning: int
+    ):
         """"""
         x = self.dummy_input
         i = 0
@@ -46,16 +52,16 @@ class Pruner:
                 x = self.ordered_node[i].module(x)
             i += 1
 
-        n = x.shape[0]
-        c = input_node.module.out_channels
-        h = x.shape[2] - input_node.module.kernel_size[0] + 1
-        w = x.shape[3] - input_node.module.kernel_size[1] + 1
+        # new_flatten_size = reduce(
+        #     lambda a, b: a * b, self.ordered_node[i].module(x).shape
+        # )
 
-        new_flatten_size = n * c * h * w
-        # TODO: How to reshape indices ?
+        new_indices: List[int] = []
 
-        print(new_flatten_size)
+        for idx in indices:
+            tmp = [idx * nb_filter_before_pruning]
+            for j in range(1, nb_filter_before_pruning):
+                tmp.append(tmp[j - 1] + 1)
+            new_indices += tmp
 
-        import pdb
-
-        pdb.set_trace()
+        return new_indices
