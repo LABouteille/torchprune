@@ -3,6 +3,7 @@ import random
 from unittest.mock import Mock
 
 import numpy as np
+import pytest
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -13,8 +14,19 @@ from torchcompress.node import OPTYPE, Node
 
 class TestDependencyGraph:
     @classmethod
-    def setup_class(cls):
-        cls._seed_everything(42)
+    def _seed_everything(cls, seed: int):
+        random.seed(seed)
+        os.environ["PYTHONHASHSEED"] = str(seed)
+        np.random.seed(seed)
+        torch.manual_seed(seed)
+        torch.cuda.manual_seed(seed)
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = True
+
+    @pytest.fixture(autouse=True, scope="function")
+    def setup_and_teardown_at_each_test(self):
+
+        self._seed_everything(42)
 
         class ConvNet(nn.Module):
             def __init__(self):
@@ -31,21 +43,13 @@ class TestDependencyGraph:
                 x = self.conv3(x)
                 return x
 
-        cls.model = ConvNet()
+        # Setup
+        self.model = ConvNet()
 
-    @classmethod
-    def teardown_class(cls):
-        del cls.model
+        yield  # Test will be run here
 
-    @classmethod
-    def _seed_everything(cls, seed: int):
-        random.seed(seed)
-        os.environ["PYTHONHASHSEED"] = str(seed)
-        np.random.seed(seed)
-        torch.manual_seed(seed)
-        torch.cuda.manual_seed(seed)
-        torch.backends.cudnn.deterministic = True
-        torch.backends.cudnn.benchmark = True
+        # Teardown
+        del self.model
 
     def test_build_graph(self):
         x = torch.randn(1, 2, 4, 4)
@@ -66,7 +70,7 @@ class TestDependencyGraph:
 
         list_modules = list(self.model.modules())
         conv_2_4_module = list_modules[1]
-        relu_module = OPTYPE.FUNCTIONAL
+        relu_module = None
         conv_4_5_module = list_modules[2]
         conv_5_4_module = list_modules[3]
 
@@ -108,7 +112,7 @@ class TestDependencyGraph:
 
         list_modules = list(self.model.modules())
         conv_2_4_module = list_modules[1]
-        relu_module = OPTYPE.FUNCTIONAL
+        relu_module = None
         conv_4_5_module = list_modules[2]
         conv_5_4_module = list_modules[3]
 
@@ -158,7 +162,7 @@ class TestDependencyGraph:
 
         list_modules = list(self.model.modules())
         conv_2_4_module = list_modules[1]
-        relu_module = OPTYPE.FUNCTIONAL
+        relu_module = None
         conv_4_5_module = list_modules[2]
         conv_5_4_module = list_modules[3]
 

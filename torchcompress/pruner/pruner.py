@@ -44,17 +44,12 @@ class Pruner:
         self, input_node: Node, indices: List[int], nb_filter_before_pruning: int
     ):
         """"""
-        x = self.dummy_input
-        i = 0
+        x, i = self.dummy_input, 0
 
         while i < len(self.ordered_node) and self.ordered_node[i] != input_node:
             if self.ordered_node[i].op_type != OPTYPE.ACTIVATION:
                 x = self.ordered_node[i].module(x)
             i += 1
-
-        # new_flatten_size = reduce(
-        #     lambda a, b: a * b, self.ordered_node[i].module(x).shape
-        # )
 
         new_indices: List[int] = []
 
