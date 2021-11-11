@@ -31,6 +31,8 @@ class DependencyGraph:
             self.ordered_node
         )
 
+        self.__clean_dependency(self.dependencies)
+
     def __build_graph(self, inputs: torch.Tensor) -> Dict[nn.Module, Node]:
         """"""
         grad_fn_to_module = {}
@@ -128,7 +130,6 @@ class DependencyGraph:
                 while len(out) > 0 and (
                     out[0].op_type != OPTYPE.CONV and out[0].op_type != OPTYPE.LINEAR
                 ):
-                    # FIXME prune_fn should depends on type of node
                     dependencies[node].append(out[0])
                     out = out[0].outputs
 
@@ -141,3 +142,14 @@ class DependencyGraph:
                     dependencies[node].append(out[0])
 
         return dependencies
+
+    def __clean_dependency(self, dependencies: Dict[Node, List[Node]]):
+        # Only Conv->Linear should have flatten dependencies.
+        def out_flatten_op_from(x):
+            return x.op_type != OPTYPE.FLATTEN
+
+        for node in dependencies.keys():
+            if isinstance(node.module, nn.Linear):
+                dependencies[node] = list(
+                    filter(out_flatten_op_from, dependencies[node])
+                )

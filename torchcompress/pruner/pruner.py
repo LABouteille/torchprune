@@ -31,7 +31,6 @@ class Pruner:
 
         for dep in self.dependencies[input_node]:
             if dep.op_type == OPTYPE.FLATTEN:
-                # TODO: Use some sort of self.cache to avoid doing module(x) all over again ?
                 indices = self.__expand_indices(
                     input_node, indices, nb_filter_before_pruning
                 )
@@ -44,13 +43,6 @@ class Pruner:
         self, input_node: Node, indices: List[int], nb_filter_before_pruning: int
     ):
         """"""
-        x, i = self.dummy_input, 0
-
-        while i < len(self.ordered_node) and self.ordered_node[i] != input_node:
-            if self.ordered_node[i].op_type != OPTYPE.ACTIVATION:
-                x = self.ordered_node[i].module(x)
-            i += 1
-
         new_indices: List[int] = []
 
         for idx in indices:
