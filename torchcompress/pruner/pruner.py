@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-# from functools import reduce
 from typing import TYPE_CHECKING, Callable, Dict, List
 
 from torchcompress.node import OPTYPE

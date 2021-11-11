@@ -28,12 +28,16 @@ class TestDependencyGraph:
 
         self._seed_everything(42)
 
-        class ConvNet(nn.Module):
+        class NeuralNet(nn.Module):
             def __init__(self):
                 super().__init__()
                 self.conv1 = nn.Conv2d(in_channels=2, out_channels=4, kernel_size=3)
                 self.conv2 = nn.Conv2d(in_channels=4, out_channels=5, kernel_size=1)
                 self.conv3 = nn.Conv2d(in_channels=5, out_channels=4, kernel_size=1)
+
+                self.linear1 = nn.Linear(in_features=16, out_features=8)
+                self.linear2 = nn.Linear(in_features=8, out_features=4)
+                self.linear3 = nn.Linear(in_features=4, out_features=3)
 
             def forward(self, x):
                 x = self.conv1(x)
@@ -41,10 +45,20 @@ class TestDependencyGraph:
                 x = self.conv2(x)
                 x = F.relu(x)
                 x = self.conv3(x)
+                x = F.relu(x)
+
+                x = torch.flatten(x)
+
+                x = self.linear1(x)
+                x = F.relu(x)
+                x = self.linear2(x)
+                x = F.relu(x)
+                x = self.linear3(x)
+                x = F.relu(x)
                 return x
 
         # Setup
-        self.model = ConvNet()
+        self.model = NeuralNet()
 
         yield  # Test will be run here
 
@@ -69,22 +83,37 @@ class TestDependencyGraph:
         module_to_node_mock.__setitem__ = Mock(side_effect=setitem)
 
         list_modules = list(self.model.modules())
-        conv_2_4_module = list_modules[1]
-        relu_module = None
-        conv_4_5_module = list_modules[2]
-        conv_5_4_module = list_modules[3]
+        conv1 = list_modules[1]
+        conv2 = list_modules[2]
+        conv3 = list_modules[3]
+        linear1 = list_modules[4]
+        linear2 = list_modules[5]
+        linear3 = list_modules[6]
+        relu = None
 
-        module_to_node_mock[conv_2_4_module] = Node(
-            module=conv_2_4_module, op_type=OPTYPE.CONV, grad_fn=lambda: None
+        module_to_node_mock[conv1] = Node(
+            module=conv1, op_type=OPTYPE.CONV, grad_fn=lambda: None
         )
-        module_to_node_mock[relu_module] = Node(
-            module=relu_module, op_type=OPTYPE.ACTIVATION, grad_fn=lambda: None
+        module_to_node_mock[relu] = Node(
+            module=relu, op_type=OPTYPE.ACTIVATION, grad_fn=lambda: None
         )
-        module_to_node_mock[conv_4_5_module] = Node(
-            module=conv_4_5_module, op_type=OPTYPE.CONV, grad_fn=lambda: None
+        module_to_node_mock[conv2] = Node(
+            module=conv2, op_type=OPTYPE.CONV, grad_fn=lambda: None
         )
-        module_to_node_mock[conv_5_4_module] = Node(
-            module=conv_5_4_module, op_type=OPTYPE.CONV, grad_fn=lambda: None
+        module_to_node_mock[conv3] = Node(
+            module=conv3, op_type=OPTYPE.CONV, grad_fn=lambda: None
+        )
+
+        module_to_node_mock[linear1] = Node(
+            module=linear1, op_type=OPTYPE.LINEAR, grad_fn=lambda: None
+        )
+
+        module_to_node_mock[linear2] = Node(
+            module=linear2, op_type=OPTYPE.LINEAR, grad_fn=lambda: None
+        )
+
+        module_to_node_mock[linear3] = Node(
+            module=linear3, op_type=OPTYPE.LINEAR, grad_fn=lambda: None
         )
 
         for module, node in module_to_node.items():
@@ -111,45 +140,86 @@ class TestDependencyGraph:
         module_to_node_mock.__setitem__ = Mock(side_effect=setitem)
 
         list_modules = list(self.model.modules())
-        conv_2_4_module = list_modules[1]
-        relu_module = None
-        conv_4_5_module = list_modules[2]
-        conv_5_4_module = list_modules[3]
+        conv1 = list_modules[1]
+        conv2 = list_modules[2]
+        conv3 = list_modules[3]
+        linear1 = list_modules[4]
+        linear2 = list_modules[5]
+        linear3 = list_modules[6]
+        relu = None
+        flatten = None
 
-        module_to_node_mock[conv_2_4_module] = Node(
-            module=conv_2_4_module, op_type=OPTYPE.CONV, grad_fn=lambda: None
+        module_to_node_mock[conv1] = Node(
+            module=conv1, op_type=OPTYPE.CONV, grad_fn=lambda: None
         )
-        module_to_node_mock[relu_module] = Node(
-            module=relu_module, op_type=OPTYPE.ACTIVATION, grad_fn=lambda: None
+
+        module_to_node_mock[conv2] = Node(
+            module=conv2, op_type=OPTYPE.CONV, grad_fn=lambda: None
         )
-        module_to_node_mock[conv_4_5_module] = Node(
-            module=conv_4_5_module, op_type=OPTYPE.CONV, grad_fn=lambda: None
+        module_to_node_mock[conv3] = Node(
+            module=conv3, op_type=OPTYPE.CONV, grad_fn=lambda: None
         )
-        module_to_node_mock[conv_5_4_module] = Node(
-            module=conv_5_4_module, op_type=OPTYPE.CONV, grad_fn=lambda: None
+
+        module_to_node_mock[linear1] = Node(
+            module=linear1, op_type=OPTYPE.LINEAR, grad_fn=lambda: None
+        )
+
+        module_to_node_mock[linear2] = Node(
+            module=linear2, op_type=OPTYPE.LINEAR, grad_fn=lambda: None
+        )
+
+        module_to_node_mock[linear3] = Node(
+            module=linear3, op_type=OPTYPE.LINEAR, grad_fn=lambda: None
+        )
+
+        module_to_node_mock[relu] = Node(
+            module=relu, op_type=OPTYPE.ACTIVATION, grad_fn=lambda: None
+        )
+
+        module_to_node_mock[flatten] = Node(
+            module=flatten, op_type=OPTYPE.FLATTEN, grad_fn=lambda: None
         )
 
         ordered_node_mock = [
-            module_to_node_mock[conv_2_4_module],
-            module_to_node_mock[relu_module],
-            module_to_node_mock[conv_4_5_module],
-            module_to_node_mock[relu_module],
-            module_to_node_mock[conv_5_4_module],
+            module_to_node_mock[conv1],
+            module_to_node_mock[relu],
+            module_to_node_mock[conv2],
+            module_to_node_mock[relu],
+            module_to_node_mock[conv3],
+            module_to_node_mock[relu],
+            module_to_node_mock[flatten],
+            module_to_node_mock[flatten],
+            module_to_node_mock[flatten],
+            module_to_node_mock[flatten],
+            module_to_node_mock[linear1],
+            module_to_node_mock[relu],
+            module_to_node_mock[flatten],
+            module_to_node_mock[flatten],
+            module_to_node_mock[flatten],
+            module_to_node_mock[linear2],
+            module_to_node_mock[relu],
+            module_to_node_mock[flatten],
+            module_to_node_mock[flatten],
+            module_to_node_mock[flatten],
+            module_to_node_mock[linear3],
+            module_to_node_mock[relu],
         ]
 
         for i, node in enumerate(ordered_node):
             node_mock = ordered_node_mock[i]
             assert node.module == node_mock.module
 
-    def test_build_dependency_graph(self):
+    def test_build_dependency(self):
         x = torch.randn(1, 2, 4, 4)
 
         DG = tc.DependencyGraph(self.model)
-        DG.build_dependency_graph(x)
+        module_to_node = DG._DependencyGraph__build_graph(x)
+        ordered_node = DG._DependencyGraph__order_dependency_graph(module_to_node)
+        dependencies = DG._DependencyGraph__build_dependency(ordered_node)
 
         # Mock graph
         module_to_node_mock = Mock()
-        module_to_node_copy = DG.module_to_node.copy()
+        module_to_node_copy = module_to_node.copy()
 
         def getitem(module):
             return module_to_node_copy[module]
@@ -161,37 +231,179 @@ class TestDependencyGraph:
         module_to_node_mock.__setitem__ = Mock(side_effect=setitem)
 
         list_modules = list(self.model.modules())
-        conv_2_4_module = list_modules[1]
-        relu_module = None
-        conv_4_5_module = list_modules[2]
-        conv_5_4_module = list_modules[3]
+        conv1 = list_modules[1]
+        conv2 = list_modules[2]
+        conv3 = list_modules[3]
+        linear1 = list_modules[4]
+        linear2 = list_modules[5]
+        linear3 = list_modules[6]
+        relu = None
+        flatten = None
 
-        module_to_node_mock[conv_2_4_module] = Node(
-            module=conv_2_4_module, op_type=OPTYPE.CONV, grad_fn=lambda: None
+        module_to_node_mock[conv1] = Node(
+            module=conv1, op_type=OPTYPE.CONV, grad_fn=lambda: None
         )
-        module_to_node_mock[relu_module] = Node(
-            module=relu_module, op_type=OPTYPE.ACTIVATION, grad_fn=lambda: None
+
+        module_to_node_mock[conv2] = Node(
+            module=conv2, op_type=OPTYPE.CONV, grad_fn=lambda: None
         )
-        module_to_node_mock[conv_4_5_module] = Node(
-            module=conv_4_5_module, op_type=OPTYPE.CONV, grad_fn=lambda: None
+        module_to_node_mock[conv3] = Node(
+            module=conv3, op_type=OPTYPE.CONV, grad_fn=lambda: None
         )
-        module_to_node_mock[conv_5_4_module] = Node(
-            module=conv_5_4_module, op_type=OPTYPE.CONV, grad_fn=lambda: None
+
+        module_to_node_mock[linear1] = Node(
+            module=linear1, op_type=OPTYPE.LINEAR, grad_fn=lambda: None
+        )
+
+        module_to_node_mock[linear2] = Node(
+            module=linear2, op_type=OPTYPE.LINEAR, grad_fn=lambda: None
+        )
+
+        module_to_node_mock[linear3] = Node(
+            module=linear3, op_type=OPTYPE.LINEAR, grad_fn=lambda: None
+        )
+
+        module_to_node_mock[relu] = Node(
+            module=relu, op_type=OPTYPE.ACTIVATION, grad_fn=lambda: None
+        )
+
+        module_to_node_mock[flatten] = Node(
+            module=flatten, op_type=OPTYPE.FLATTEN, grad_fn=lambda: None
         )
 
         dependencies_mock = {
-            module_to_node_mock[conv_2_4_module]: [
-                module_to_node_mock[relu_module],
-                module_to_node_mock[conv_4_5_module],
+            module_to_node_mock[conv1]: [
+                module_to_node_mock[relu],
+                module_to_node_mock[conv2],
             ],
-            module_to_node_mock[conv_4_5_module]: [
-                module_to_node_mock[relu_module],
-                module_to_node_mock[conv_5_4_module],
+            module_to_node_mock[conv2]: [
+                module_to_node_mock[relu],
+                module_to_node_mock[conv3],
             ],
-            module_to_node_mock[conv_5_4_module]: [],
+            module_to_node_mock[conv3]: [
+                module_to_node_mock[relu],
+                module_to_node_mock[flatten],
+                module_to_node_mock[flatten],
+                module_to_node_mock[flatten],
+                module_to_node_mock[flatten],
+                module_to_node_mock[linear1],
+            ],
+            module_to_node_mock[linear1]: [
+                module_to_node_mock[relu],
+                module_to_node_mock[flatten],
+                module_to_node_mock[flatten],
+                module_to_node_mock[flatten],
+                module_to_node_mock[linear2],
+            ],
+            module_to_node_mock[linear2]: [
+                module_to_node_mock[relu],
+                module_to_node_mock[flatten],
+                module_to_node_mock[flatten],
+                module_to_node_mock[flatten],
+                module_to_node_mock[linear3],
+            ],
+            module_to_node_mock[linear3]: [module_to_node_mock[relu]],
         }
 
-        for node, dep in DG.dependencies.items():
+        for node, dep in dependencies.items():
+            node_mock = module_to_node_mock[node.module]
+            assert node.module == node_mock.module
+            assert len(dep) == len(dependencies_mock[node_mock])
+            for dep_node, dep_node_mock in zip(dep, dependencies_mock[node_mock]):
+                assert dep_node.module == dep_node_mock.module
+
+    def test_clean_dependency(self):
+        x = torch.randn(1, 2, 4, 4)
+
+        DG = tc.DependencyGraph(self.model)
+        module_to_node = DG._DependencyGraph__build_graph(x)
+        ordered_node = DG._DependencyGraph__order_dependency_graph(module_to_node)
+        dependencies = DG._DependencyGraph__build_dependency(ordered_node)
+        DG._DependencyGraph__clean_dependency(dependencies)
+
+        # Mock graph
+        module_to_node_mock = Mock()
+        module_to_node_copy = module_to_node.copy()
+
+        def getitem(module):
+            return module_to_node_copy[module]
+
+        def setitem(module, node):
+            module_to_node_copy[module] = node
+
+        module_to_node_mock.__getitem__ = Mock(side_effect=getitem)
+        module_to_node_mock.__setitem__ = Mock(side_effect=setitem)
+
+        list_modules = list(self.model.modules())
+        conv1 = list_modules[1]
+        conv2 = list_modules[2]
+        conv3 = list_modules[3]
+        linear1 = list_modules[4]
+        linear2 = list_modules[5]
+        linear3 = list_modules[6]
+        relu = None
+        flatten = None
+
+        module_to_node_mock[conv1] = Node(
+            module=conv1, op_type=OPTYPE.CONV, grad_fn=lambda: None
+        )
+
+        module_to_node_mock[conv2] = Node(
+            module=conv2, op_type=OPTYPE.CONV, grad_fn=lambda: None
+        )
+        module_to_node_mock[conv3] = Node(
+            module=conv3, op_type=OPTYPE.CONV, grad_fn=lambda: None
+        )
+
+        module_to_node_mock[linear1] = Node(
+            module=linear1, op_type=OPTYPE.LINEAR, grad_fn=lambda: None
+        )
+
+        module_to_node_mock[linear2] = Node(
+            module=linear2, op_type=OPTYPE.LINEAR, grad_fn=lambda: None
+        )
+
+        module_to_node_mock[linear3] = Node(
+            module=linear3, op_type=OPTYPE.LINEAR, grad_fn=lambda: None
+        )
+
+        module_to_node_mock[relu] = Node(
+            module=relu, op_type=OPTYPE.ACTIVATION, grad_fn=lambda: None
+        )
+
+        module_to_node_mock[flatten] = Node(
+            module=flatten, op_type=OPTYPE.FLATTEN, grad_fn=lambda: None
+        )
+
+        dependencies_mock = {
+            module_to_node_mock[conv1]: [
+                module_to_node_mock[relu],
+                module_to_node_mock[conv2],
+            ],
+            module_to_node_mock[conv2]: [
+                module_to_node_mock[relu],
+                module_to_node_mock[conv3],
+            ],
+            module_to_node_mock[conv3]: [
+                module_to_node_mock[relu],
+                module_to_node_mock[flatten],
+                module_to_node_mock[flatten],
+                module_to_node_mock[flatten],
+                module_to_node_mock[flatten],
+                module_to_node_mock[linear1],
+            ],
+            module_to_node_mock[linear1]: [
+                module_to_node_mock[relu],
+                module_to_node_mock[linear2],
+            ],
+            module_to_node_mock[linear2]: [
+                module_to_node_mock[relu],
+                module_to_node_mock[linear3],
+            ],
+            module_to_node_mock[linear3]: [module_to_node_mock[relu]],
+        }
+
+        for node, dep in dependencies.items():
             node_mock = module_to_node_mock[node.module]
             assert node.module == node_mock.module
             assert len(dep) == len(dependencies_mock[node_mock])
