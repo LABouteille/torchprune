@@ -1,10 +1,12 @@
 -e .
 black
 flake8
+jupyter
 mypy
 pdbpp
 pre_commit
 pytest
 torch==1.8.1
+torchinfo
 torchvision==0.9.1
 torchviz
