@@ -13,6 +13,7 @@ class OPTYPE(Enum):
     LINEAR = 2
     ACTIVATION = 3
     FLATTEN = 4  # torch.flatten() etc.
+    BATCHNORM = 5
 
     def __repr__(self):
         return self.name

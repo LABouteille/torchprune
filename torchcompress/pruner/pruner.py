@@ -2,12 +2,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Callable, Dict, List
 
+import torch.nn as nn
+
 from torchcompress.node import OPTYPE
 
 if TYPE_CHECKING:
     # Not import during run-time.
     import torch
-    import torch.nn as nn
 
     from torchcompress.dependency_graph import DependencyGraph
     from torchcompress.node import Node
@@ -33,9 +34,7 @@ class Pruner:
                 indices = self.__expand_indices(
                     input_node, indices, nb_filter_before_pruning
                 )
-                break
 
-        for dep in self.dependencies[input_node]:
             dep.prune_fn["in_channels"](dep.module, indices)
 
     def __expand_indices(

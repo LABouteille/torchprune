@@ -38,7 +38,7 @@ class TestPruner:
                 x = F.relu(x)
                 x = self.conv1(x)
                 x = F.relu(x)
-                x = torch.flatten(x)
+                x = torch.flatten(x, start_dim=1)
                 x = self.linear1(x)
                 x = F.relu(x)
                 return x
@@ -98,7 +98,7 @@ class TestPruner:
         assert self.model.linear1.out_features == 8
         assert self.model.linear1.bias.shape == torch.Size([8])
 
-        assert self.model(self.x).shape == torch.Size([8])
+        assert self.model(self.x).shape == torch.Size([1, 8])
 
     def test_flatten_2(self):
         pruner = tc.Pruner(DG=self.DG, dummy_input=self.x)
@@ -121,4 +121,4 @@ class TestPruner:
         assert self.model.linear1.out_features == 8
         assert self.model.linear1.bias.shape == torch.Size([8])
 
-        assert self.model(self.x).shape == torch.Size([8])
+        assert self.model(self.x).shape == torch.Size([1, 8])

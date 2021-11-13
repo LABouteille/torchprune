@@ -10,6 +10,7 @@ if TYPE_CHECKING:
 
 from torchcompress.node import OPTYPE, Node
 from torchcompress.pruner.structured import (
+    prune_batchnorm_in,
     prune_conv_in,
     prune_conv_out,
     prune_linear_in,
@@ -44,7 +45,9 @@ class DependencyGraph:
 
         hooks = []
         for module in self.model.modules():
-            if isinstance(module, (nn.Conv2d, nn.Linear, nn.ReLU)):
+            if isinstance(
+                module, (nn.Conv2d, nn.Linear, nn.ReLU, nn.BatchNorm2d, nn.BatchNorm1d)
+            ):
                 hooks.append(module.register_forward_hook(hook_fn))
 
         out = self.model(inputs)
@@ -62,6 +65,10 @@ class DependencyGraph:
                 op_type = OPTYPE.CONV
             elif isinstance(module, nn.Linear):
                 op_type = OPTYPE.LINEAR
+            elif isinstance(module, nn.BatchNorm2d) or isinstance(
+                module, nn.BatchNorm1d
+            ):
+                op_type = OPTYPE.BATCHNORM
             else:
                 # Pytorch ReLU functional has no module
                 if module is None and ("relubackward" in grad_fn.name().lower()):
@@ -124,12 +131,15 @@ class DependencyGraph:
 
                 dependencies[node] = []
 
-                # TODO Suppose len(node.outputs) == 1. What if len > 2
+                # FIXME: Suppose len(node.outputs) == 1. What if len > 2
                 out = node.outputs
 
                 while len(out) > 0 and (
                     out[0].op_type != OPTYPE.CONV and out[0].op_type != OPTYPE.LINEAR
                 ):
+                    if out[0].op_type == OPTYPE.BATCHNORM:
+                        out[0].prune_fn["in_channels"] = prune_batchnorm_in
+
                     dependencies[node].append(out[0])
                     out = out[0].outputs
 
