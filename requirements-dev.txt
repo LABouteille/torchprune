@@ -1,6 +1,7 @@
 -e .
 black
 flake8
+jupyter
 mypy
 pdbpp
 pre_commit
