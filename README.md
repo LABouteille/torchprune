@@ -1,7 +1,7 @@
 # torchcompress
 
 - Support Filter pruning:
-    - Conv $\to$ Conv
-    - Linear $\to$ Linear
-    - Conv $\to$ Flatten $\to$ Linear
+    - Conv -> Conv
+    - Linear -> Linear
+    - Conv -> Flatten -> Linear
     - Batchnorm2d/1d
