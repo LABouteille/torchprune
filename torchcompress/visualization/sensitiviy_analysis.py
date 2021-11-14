@@ -43,7 +43,7 @@ def view_layers_sensitivies_comparison(df):
     out = widgets.Output(layout=widgets.Layout(height="100%"))
 
     # assign a different color to each parameter (otherwise, colors change on us as we make different selections)
-    param_names = sorted(df["parameter"].unique().tolist())
+    param_names = sorted(list(set(df["parameter"])))
     color_idx = np.linspace(0, 1, len(param_names))
     colors = {}
     for i, pname in zip(color_idx, param_names):
@@ -78,10 +78,12 @@ def view_layers_sensitivies_comparison(df):
                 color=colors[param_name],
             )
 
+        ax = plt.gca()
+        ax.xaxis.set_ticks(list(set(df["sparsity"])))
+
         plt.ylabel("top1_acc")
         plt.xlabel("sparsity")
         plt.title("Pruning Sensitivity")
-        # plt.legend(loc='lower center', ncol=2, mode="expand", borderaxespad=0.);
         plt.grid()
         plt.legend(
             loc="upper center",
