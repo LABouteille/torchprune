@@ -68,10 +68,10 @@ class TestPrunerConv:
         # self.DG = tc.DependencyGraph(self.model)
         # self.DG.build_dependency_graph(self.x)
 
-        from torchviz import make_dot
+        # from torchviz import make_dot
 
-        g = make_dot(self.model(self.x), params=dict(self.model.named_parameters()))
-        g.render(filename="graph")
+        # g = make_dot(self.model(self.x), params=dict(self.model.named_parameters()))
+        # g.render(filename="graph")
 
         yield  # Test will be run here
 
