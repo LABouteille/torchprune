@@ -38,5 +38,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: |
-          echo ${{ needs.build.outputs }} 
+          ${{ needs.build.outputs }}
+          pip list
           python -m pytest tests/pruner
