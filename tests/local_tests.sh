@@ -1,6 +1,6 @@
 #!/bin/sh
 
-python -m pytest pruner/test_dependency_graph.py -s -vv
+python -m pytest pruner/pruner/test_dependency_graph.py -s -vv
 python -m pytest pruner/test_criteria.py -s -vv
 python -m pytest pruner/test_pruner_conv.py -s -vv
 python -m pytest pruner/test_pruner_linear.py -s -vv

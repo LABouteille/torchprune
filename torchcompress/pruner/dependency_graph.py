@@ -8,7 +8,7 @@ if TYPE_CHECKING:
     # Not import during run-time.
     import torch
 
-from torchcompress.node import OPTYPE, Node
+from torchcompress.pruner.node import OPTYPE, Node
 from torchcompress.pruner.structured import (
     prune_batchnorm_in,
     prune_conv_in,

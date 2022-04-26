@@ -9,7 +9,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 import torchcompress as tc
-from torchcompress.node import OPTYPE, Node
+from torchcompress.pruner.node import OPTYPE, Node
 
 
 class TestDependencyGraph:

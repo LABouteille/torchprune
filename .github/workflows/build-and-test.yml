@@ -1,11 +1,11 @@
-name: "Python unit-tests"
+name: Build and Test
 
 on: [push]
 
 jobs:
-  install-dependencies:
-    name: "Dependencies + Tests"
-    runs-on: ubuntu-20.04
+  build:
+    name: Build
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         python: [3.7]
@@ -32,7 +32,12 @@ jobs:
       - name: "Install dependencies"
         run: |
           pip install -r requirements.txt
-          pip install -r requirements-dev.txt
-      - name: "Run tests with pytest"
+          pip install -r requirements-dev.txt  
+
+  test-pruning:
+    needs: build
+      name: Filter pruning
+      runs-on: ubuntu-latest
+      steps:
         run: |
-          python -m pytest
+          python -m pytest tests/pruner

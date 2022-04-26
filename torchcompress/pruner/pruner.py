@@ -4,14 +4,14 @@ from typing import TYPE_CHECKING, Callable, Dict, List
 
 import torch.nn as nn
 
-from torchcompress.node import OPTYPE
+from torchcompress.pruner.node import OPTYPE
 
 if TYPE_CHECKING:
     # Not import during run-time.
     import torch
 
-    from torchcompress.dependency_graph import DependencyGraph
-    from torchcompress.node import Node
+    from torchcompress.pruner.dependency_graph import DependencyGraph
+    from torchcompress.pruner.node import Node
 
 
 class Pruner:
