@@ -36,8 +36,8 @@ jobs:
 
   test-pruning:
     needs: build
-      name: Filter pruning
-      runs-on: ubuntu-latest
-      steps:
-        run: |
-          python -m pytest tests/pruner
+    name: Filter pruning
+    runs-on: ubuntu-latest
+    steps:
+      run: |
+        python -m pytest tests/pruner
