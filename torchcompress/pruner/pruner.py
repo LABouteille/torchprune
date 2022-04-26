@@ -25,27 +25,36 @@ class Pruner:
         """"""
         indices: List[int] = criteria(layer, amount_to_prune)
         input_node = self.module_to_node[layer]
-        nb_filter_before_pruning = input_node.module.weight.shape[0]
 
         input_node.prune_fn["out_channels"](input_node.module, indices)
 
         for dep in self.dependencies[input_node]:
             if dep.op_type == OPTYPE.FLATTEN:
-                indices = self.__expand_indices(
-                    input_node, indices, nb_filter_before_pruning
-                )
-
+                indices = self.__expand_indices(input_node, indices)
             dep.prune_fn["in_channels"](dep.module, indices)
 
-    def __expand_indices(
-        self, input_node: Node, indices: List[int], nb_filter_before_pruning: int
-    ):
+    def __expand_indices(self, input_node: Node, indices: List[int]):
         """"""
+        x, i = self.dummy_input, 0
+
+        # Compute output for each convolution/linear layer.
+        do_while = i < len(self.ordered_node)
+        while do_while:
+
+            if self.ordered_node[i].op_type != OPTYPE.ACTIVATION:
+                x = self.ordered_node[i].module(x)
+
+            do_while = i < len(self.ordered_node) and self.ordered_node[i] != input_node
+
+            i += 1
+
+        _, _, h, w = x.shape
+
         new_indices: List[int] = []
 
         for idx in indices:
-            tmp = [idx * nb_filter_before_pruning]
-            for j in range(1, nb_filter_before_pruning):
+            tmp = [idx * (h * w)]
+            for j in range(1, h * w):
                 tmp.append(tmp[j - 1] + 1)
             new_indices += tmp
 

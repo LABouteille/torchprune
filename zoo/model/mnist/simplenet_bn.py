@@ -20,7 +20,6 @@ class SimpleNetBN(nn.Module):
         self.linear2 = nn.Linear(in_features=120, out_features=84, bias=False)
         self.bn_linear2 = nn.BatchNorm1d(84)
         self.linear3 = nn.Linear(in_features=84, out_features=num_classes, bias=False)
-        self.bn_linear3 = nn.BatchNorm1d(num_classes)
 
         if init_weights:
             self._initialize_weights()
@@ -42,7 +41,6 @@ class SimpleNetBN(nn.Module):
         x = self.bn_linear2(x)
         x = F.relu(x)
         x = self.linear3(x)
-        x = self.bn_linear3(x)
         return x
 
     def _initialize_weights(self):

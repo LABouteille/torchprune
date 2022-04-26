@@ -2,7 +2,9 @@
 black
 flake8
 jupyter
+matplotlib
 mypy
+pandas
 pdbpp
 pre_commit
 pytest
