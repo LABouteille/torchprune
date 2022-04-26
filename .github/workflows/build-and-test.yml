@@ -39,5 +39,5 @@ jobs:
     name: Filter pruning
     runs-on: ubuntu-latest
     steps:
-      run: |
-        python -m pytest tests/pruner
+      - run: |
+          python -m pytest tests/pruner
